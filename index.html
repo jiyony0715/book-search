@@ -24,23 +24,20 @@
 </div>
 <div id="results"></div>
 
-async function searchBooks() {
-    const query = document.getElementById('query').value;
-    if (!query) return alert("검색어를 입력하세요.");
-    
-    const apiKey = 'ttbrlawldus91872302001';
-    // https로 주소 변경
-    const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${apiKey}&Query=${encodeURIComponent(query)}&QueryType=Title&MaxResults=5&start=1&SearchTarget=Book&output=js&Version=20131101&callback=renderBooks`;
+<script>
+    async function searchBooks() {
+        const query = document.getElementById('query').value;
+        const apiKey = 'ttbrlawldus91872302001';
+        const display = 5; // 보여줄 결과 개수
+        
+        // CORS 문제를 피하기 위해 JSONP 방식을 사용하거나 프록시를 거쳐야 할 수 있습니다.
+        // 아래는 알라딘 API 호출 표준 URL입니다.
+        const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${apiKey}&Query=${encodeURIComponent(query)}&QueryType=Title&MaxResults=${display}&start=1&SearchTarget=Book&output=js&Version=20131101&callback=renderBooks`;
 
-    // 기존에 생성된 스크립트 태그가 있다면 삭제 (중복 방지)
-    const oldScript = document.getElementById('aladin-script');
-    if (oldScript) oldScript.remove();
-
-    const script = document.createElement('script');
-    script.id = 'aladin-script';
-    script.src = url;
-    document.body.appendChild(script);
-}
+        const script = document.createElement('script');
+        script.src = url;
+        document.body.appendChild(script);
+    }
 
     function renderBooks(data) {
         const resultsDiv = document.getElementById('results');
@@ -68,5 +65,5 @@ async function searchBooks() {
 </script>
 
 </body>
-
 </html>
+
