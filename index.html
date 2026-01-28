@@ -77,6 +77,51 @@
         document.body.appendChild(script);
     }
 </script>
+<script>
+function searchBooks() {
+    const query = document.getElementById('query').value;
+    const ttbKey = 'ttbrlawldus91872302001'; // 사용자님의 키
+    
+    // 1. 기존에 생성된 script 태그가 있다면 삭제 (중복 방지)
+    const oldScript = document.getElementById('aladinScript');
+    if (oldScript) oldScript.remove();
 
+    // 2. JSONP 호출을 위한 script 태그 동적 생성
+    const script = document.createElement('script');
+    script.id = 'aladinScript';
+    // 알라딘 API URL (Output=JS와 callback 함수 지정이 필수입니다)
+    script.src = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ttbKey}&Query=${encodeURIComponent(query)}&Output=JS&callback=displayResult`;
+    
+    document.head.appendChild(script);
+}
+
+// 3. API 응답을 처리할 콜백 함수 (위의 callback=displayResult와 이름이 같아야 함)
+function displayResult(data) {
+    const resultDiv = document.getElementById('results');
+    resultDiv.innerHTML = ''; // 이전 결과 삭제
+
+    if (!data.item || data.item.length === 0) {
+        resultDiv.innerHTML = '<p>검색 결과가 없습니다.</p>';
+        return;
+    }
+
+    data.item.forEach(book => {
+        const itemHtml = `
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <img src="${book.cover}" style="width:50px; float:left; margin-right:10px;">
+                <strong>${book.title}</strong><br>
+                <small>${book.author}</small>
+                <div style="clear:both;"></div>
+            </div>
+        `;
+        resultDiv.innerHTML += itemHtml;
+    });
+}
+</script>
+
+<input type="text" id="query" placeholder="책 제목 입력">
+<button onclick="searchBooks()">검색</button>
+<div id="results"></div>
 </body>
 </html>
+
