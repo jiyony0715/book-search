@@ -2,63 +2,76 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Aladdin Book Search Widget</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알라딘 도서 검색</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: transparent; margin: 0; padding: 10px; }
+        body { font-family: -apple-system, sans-serif; background-color: transparent; margin: 0; padding: 10px; }
         .search-container { display: flex; gap: 5px; margin-bottom: 15px; }
-        input { flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; outline: none; }
-        button { padding: 8px 15px; background: #2eaadc; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        #results { display: grid; gap: 10px; }
-        .book-item { display: flex; gap: 10px; padding: 10px; border: 1px solid #eee; border-radius: 8px; background: white; font-size: 0.9em; }
-        .book-item img { width: 50px; height: 75px; object-fit: cover; }
-        .book-info { display: flex; flex-direction: column; justify-content: center; }
-        .title { font-weight: bold; color: #333; margin-bottom: 4px; }
-        .author { color: #666; font-size: 0.85em; }
+        input { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
+        button { padding: 10px 15px; background: #2eaadc; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        #results { display: grid; gap: 12px; }
+        .book-item { display: flex; gap: 12px; padding: 12px; border: 1px solid #efefef; border-radius: 10px; background: white; cursor: pointer; transition: transform 0.2s; }
+        .book-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .book-item img { width: 60px; height: 90px; object-fit: cover; border-radius: 4px; }
+        .book-info { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+        .title { font-weight: bold; color: #333; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .author { color: #888; font-size: 0.85em; }
+        .no-result { text-align: center; color: #999; padding: 20px; }
     </style>
 </head>
 <body>
 
 <div class="search-container">
-    <input type="text" id="query" placeholder="도서 제목 입력...">
+    <input type="text" id="query" placeholder="도서 제목이나 저자 검색..." onkeypress="if(event.keyCode==13) searchBooks()">
     <button onclick="searchBooks()">검색</button>
 </div>
 <div id="results"></div>
 
 <script>
-    async function searchBooks() {
+    function searchBooks() {
         const query = document.getElementById('query').value;
+        if (!query) return;
+
         const apiKey = 'ttbrlawldus91872302001';
-        const display = 5; // 보여줄 결과 개수
-        
-        // CORS 문제를 피하기 위해 JSONP 방식을 사용하거나 프록시를 거쳐야 할 수 있습니다.
-        // 아래는 알라딘 API 호출 표준 URL입니다.
-        const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${apiKey}&Query=${encodeURIComponent(query)}&QueryType=Title&MaxResults=${display}&start=1&SearchTarget=Book&output=js&Version=20131101&callback=renderBooks`;
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '<div class="no-result">검색 중...</div>';
+
+        // 알라딘 API 호출 (https 및 최신 버전 반영)
+        const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${apiKey}&Query=${encodeURIComponent(query)}&QueryType=Title&MaxResults=5&start=1&SearchTarget=Book&output=js&Version=20131101&callback=renderBooks`;
+
+        const oldScript = document.getElementById('aladin-script');
+        if (oldScript) oldScript.remove();
 
         const script = document.createElement('script');
+        script.id = 'aladin-script';
         script.src = url;
         document.body.appendChild(script);
     }
 
+    // 데이터 구조를 유연하게 받도록 수정
     function renderBooks(data) {
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = '';
 
-        if (!data.item || data.item.length === 0) {
-            resultsDiv.innerHTML = '<p>검색 결과가 없습니다.</p>';
+        // 데이터가 없는 경우 처리 (data.item 또는 data.Item 대응)
+        const items = data.item || data.Item;
+
+        if (!items || items.length === 0) {
+            resultsDiv.innerHTML = '<div class="no-result">검색 결과가 없습니다. 다시 시도해 주세요.</div>';
             return;
         }
 
-        data.item.forEach(book => {
+        items.forEach(book => {
             const item = document.createElement('div');
             item.className = 'book-item';
+            item.onclick = () => window.open(book.link, '_blank');
             item.innerHTML = `
-                <img src="${book.cover}" alt="cover">
+                <img src="${book.cover}" alt="book cover">
                 <div class="book-info">
                     <div class="title">${book.title}</div>
                     <div class="author">${book.author}</div>
                 </div>
             `;
-            item.onclick = () => window.open(book.link, '_blank');
             resultsDiv.appendChild(item);
         });
     }
@@ -66,4 +79,3 @@
 
 </body>
 </html>
-
