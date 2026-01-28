@@ -3,77 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>알라딘 도서 검색</title>
+    <title>알라딘 도서 검색 위젯</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background-color: transparent; margin: 0; padding: 10px; }
-        .search-container { display: flex; gap: 5px; margin-bottom: 15px; }
-        input { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
-        button { padding: 10px 15px; background: #2eaadc; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        #results { display: grid; gap: 12px; }
-        .book-item { display: flex; gap: 12px; padding: 12px; border: 1px solid #efefef; border-radius: 10px; background: white; cursor: pointer; transition: transform 0.2s; }
-        .book-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .book-item img { width: 60px; height: 90px; object-fit: cover; border-radius: 4px; }
-        .book-info { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-        .title { font-weight: bold; color: #333; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .author { color: #888; font-size: 0.85em; }
-        .no-result { text-align: center; color: #999; padding: 20px; }
+        body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 10px; background-color: transparent; }
+        .search-box { display: flex; gap: 5px; margin-bottom: 15px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; font-size: 14px; }
+        button { padding: 10px 15px; background: #2eaadc; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #results { display: flex; flex-direction: column; gap: 10px; }
+        .book-card { display: flex; gap: 12px; padding: 10px; border: 1px solid #eee; border-radius: 8px; background: white; cursor: pointer; text-decoration: none; color: inherit; }
+        .book-card:hover { background-color: #f9f9f9; }
+        .book-card img { width: 50px; height: 75px; object-fit: cover; border-radius: 3px; }
+        .info { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+        .title { font-size: 14px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .author { font-size: 12px; color: #666; }
+        .status { text-align: center; color: #999; font-size: 13px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<div class="search-container">
-    <input type="text" id="query" placeholder="도서 제목이나 저자 검색..." onkeypress="if(event.keyCode==13) searchBooks()">
+<div class="search-box">
+    <input type="text" id="query" placeholder="도서 제목을 입력하세요" onkeypress="if(event.keyCode==13) searchBooks()">
     <button onclick="searchBooks()">검색</button>
 </div>
 <div id="results"></div>
 
 <script>
-    function searchBooks() {
-        const query = document.getElementById('query').value;
-        if (!query) return;
-
-        const apiKey = 'ttbrlawldus91872302001';
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = '<div class="no-result">검색 중...</div>';
-
-        // 알라딘 API 호출 (https 및 최신 버전 반영)
-        const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${apiKey}&Query=${encodeURIComponent(query)}&QueryType=Title&MaxResults=5&start=1&SearchTarget=Book&output=js&Version=20131101&callback=renderBooks`;
-
-        const oldScript = document.getElementById('aladin-script');
-        if (oldScript) oldScript.remove();
-
-        const script = document.createElement('script');
-        script.id = 'aladin-script';
-        script.src = url;
-        document.body.appendChild(script);
-    }
-
-    // 데이터 구조를 유연하게 받도록 수정
-    function renderBooks(data) {
+    // 전역 함수로 선언 (JSONP 콜백용)
+    window.renderBooks = function(data) {
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = '';
 
-        // 데이터가 없는 경우 처리 (data.item 또는 data.Item 대응)
         const items = data.item || data.Item;
 
         if (!items || items.length === 0) {
-            resultsDiv.innerHTML = '<div class="no-result">검색 결과가 없습니다. 다시 시도해 주세요.</div>';
+            resultsDiv.innerHTML = '<div class="status">검색 결과가 없습니다.</div>';
             return;
         }
 
         items.forEach(book => {
-            const item = document.createElement('div');
-            item.className = 'book-item';
-            item.onclick = () => window.open(book.link, '_blank');
-            item.innerHTML = `
-                <img src="${book.cover}" alt="book cover">
-                <div class="book-info">
+            const card = document.createElement('a');
+            card.className = 'book-card';
+            card.href = book.link;
+            card.target = '_blank';
+            card.innerHTML = `
+                <img src="${book.cover}" alt="cover">
+                <div class="info">
                     <div class="title">${book.title}</div>
                     <div class="author">${book.author}</div>
                 </div>
             `;
-            resultsDiv.appendChild(item);
+            resultsDiv.appendChild(card);
         });
+    };
+
+    function searchBooks() {
+        const query = document.getElementById('query').value.trim();
+        if (!query) return;
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '<div class="status">검색 중...</div>';
+
+        const apiKey = 'ttbrlawldus91872302001';
+        // 핵심: https 프로토콜 사용
+        const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${apiKey}&Query=${encodeURIComponent(query)}&QueryType=Title&MaxResults=5&start=1&SearchTarget=Book&output=js&Version=20131101&callback=renderBooks`;
+
+        // 이전 스크립트 삭제 후 새로 생성 (CORS 회피용 JSONP)
+        const oldScript = document.getElementById('aladin-api-script');
+        if (oldScript) oldScript.remove();
+
+        const script = document.createElement('script');
+        script.id = 'aladin-api-script';
+        script.src = url;
+        document.body.appendChild(script);
     }
 </script>
 
